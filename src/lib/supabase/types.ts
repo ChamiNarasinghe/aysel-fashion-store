@@ -1,7 +1,18 @@
 // Database types generated from the AYSEL schema.
 // Keep separate from frontend product types in src/data/products.ts.
+//
+// Each table entry includes a `Relationships` field (required by the
+// GenericTable constraint in @supabase/postgrest-js). Without it the table
+// type does not satisfy GenericSchema, Schema resolves to `never`, and every
+// .from() call site collapses to `never` arguments.
 
-export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json }
+  | Json[];
 
 export interface Database {
   public: {
@@ -23,6 +34,7 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["categories"]["Insert"]>;
+        Relationships: [];
       };
       products: {
         Row: {
@@ -46,6 +58,7 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["products"]["Insert"]>;
+        Relationships: [];
       };
       product_images: {
         Row: {
@@ -63,6 +76,7 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["product_images"]["Insert"]>;
+        Relationships: [];
       };
       product_variants: {
         Row: {
@@ -84,6 +98,7 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["product_variants"]["Insert"]>;
+        Relationships: [];
       };
       profiles: {
         Row: {
@@ -99,6 +114,7 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
+        Relationships: [];
       };
       wishlists: {
         Row: {
@@ -112,6 +128,7 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["wishlists"]["Insert"]>;
+        Relationships: [];
       };
       carts: {
         Row: {
@@ -127,6 +144,7 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["carts"]["Insert"]>;
+        Relationships: [];
       };
       cart_items: {
         Row: {
@@ -143,10 +161,86 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["cart_items"]["Insert"]>;
+        Relationships: [];
+      };
+      shopping_sync_operations: {
+        Row: {
+          user_id: string;
+          operation_type: "cart" | "wishlist";
+          operation_id: string;
+          payload_hash: string;
+          status: "pending" | "completed" | "failed";
+          result: Json | null;
+          attempt_count: number;
+          created_at: string;
+          updated_at: string;
+          completed_at: string | null;
+        };
+        Insert: Omit<
+          Database["public"]["Tables"]["shopping_sync_operations"]["Row"],
+          "status" |
+            "result" |
+            "attempt_count" |
+            "created_at" |
+            "updated_at" |
+            "completed_at"
+        > & {
+          status?: "pending" | "completed" | "failed";
+          result?: Json | null;
+          attempt_count?: number;
+          created_at?: string;
+          updated_at?: string;
+          completed_at?: string | null;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["shopping_sync_operations"]["Insert"]
+        >;
+        Relationships: [];
       };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Views: Record<string, unknown>;
+    Functions: {
+      canonicalize_shopping_payload: {
+        Args: {
+          p_operation_type: "cart" | "wishlist";
+          p_payload: Json;
+        };
+        Returns: Json;
+      };
+      shopping_payload_sha256: {
+        Args: {
+          p_operation_type: "cart" | "wishlist";
+          p_payload: Json;
+        };
+        Returns: string;
+      };
+      shopping_reserve_operation: {
+        Args: {
+          p_operation_type: "cart" | "wishlist";
+          p_operation_id: string;
+          p_payload: Json;
+        };
+        Returns: Json;
+      };
+      shopping_complete_operation: {
+        Args: {
+          p_operation_type: "cart" | "wishlist";
+          p_operation_id: string;
+          p_payload: Json;
+          p_result: Json;
+        };
+        Returns: Json;
+      };
+      shopping_fail_operation: {
+        Args: {
+          p_operation_type: "cart" | "wishlist";
+          p_operation_id: string;
+          p_payload: Json;
+          p_result: Json;
+        };
+        Returns: Json;
+      };
+    };
     Enums: {
       cart_status: "active" | "abandoned" | "completed";
     };
@@ -162,3 +256,14 @@ export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 export type WishlistRow = Database["public"]["Tables"]["wishlists"]["Row"];
 export type CartRow = Database["public"]["Tables"]["carts"]["Row"];
 export type CartItemRow = Database["public"]["Tables"]["cart_items"]["Row"];
+export type ShoppingSyncOperationRow =
+  Database["public"]["Tables"]["shopping_sync_operations"]["Row"];
+
+// Convenience insert types — used by the cart and wishlist service layer
+export type WishlistInsert = Database["public"]["Tables"]["wishlists"]["Insert"];
+export type CartInsert = Database["public"]["Tables"]["carts"]["Insert"];
+export type CartItemInsert = Database["public"]["Tables"]["cart_items"]["Insert"];
+export type CartItemUpdate = Database["public"]["Tables"]["cart_items"]["Update"];
+
+// Enum alias — avoids repeating the string union at call sites
+export type CartStatus = Database["public"]["Enums"]["cart_status"];
