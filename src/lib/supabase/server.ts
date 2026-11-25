@@ -1,19 +1,18 @@
 import "server-only";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
 /**
- * Server-side Supabase client for use in Server Components, Route Handlers
- * and Server Actions only. Never import in Client Components.
+ * Cookie-based server client for Server Components, Route Handlers, and
+ * Server Actions. Reads and writes the Supabase session from request cookies
+ * so the authenticated user's session is always propagated correctly.
  *
- * Named createSupabaseServerClient (not createServerClient) to avoid a naming
- * collision with the @supabase/ssr export of the same name in Phase 10.
- *
- * This implementation uses @supabase/supabase-js directly with session
- * persistence disabled. Phase 10 will replace this with @supabase/ssr which
- * handles cookie-based session propagation for authenticated users.
+ * In read-only contexts (Server Components) cookie writes are silently
+ * ignored by Next.js — this is expected and safe.
  */
-export function createSupabaseServerClient() {
+export async function createSupabaseServerClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
@@ -24,20 +23,31 @@ export function createSupabaseServerClient() {
     );
   }
 
-  return createClient<Database>(url, key, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
+  const cookieStore = await cookies();
+
+  return createServerClient<Database>(url, key, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        } catch {
+          // Server Component context — cookie writes are not permitted.
+          // The middleware handles token refresh and cookie propagation.
+        }
+      },
     },
   });
 }
 
 /**
- * Privileged server client using the secret key.
- * Bypasses RLS — use only for trusted server-side operations (e.g. seeding, admin).
- * Requires SUPABASE_SECRET_KEY in the server environment.
- * Never expose this key to the browser or commit it to source control.
+ * Privileged service-role client. Bypasses RLS.
+ * Use only for trusted server-side operations (e.g. admin, seeding).
+ * Never use for normal customer requests.
  */
 export function createSupabaseServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
