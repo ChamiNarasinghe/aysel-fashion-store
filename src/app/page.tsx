@@ -26,7 +26,7 @@ export default function Home() {
     <div className="bg-warm-white">
 
       {/* 01. HERO CAMPAIGN */}
-      <section className="relative h-[720px] overflow-hidden bg-light-beige sm:h-[800px] lg:h-[min(860px,85vh)]">
+      <section className="relative h-[720px] overflow-hidden bg-light-beige sm:h-[800px] lg:h-[min(860px,85vh)]" style={{ position: "relative" }}>
 
         <Image
           src="/images/hero-campaign.jpg"
@@ -123,6 +123,7 @@ export default function Home() {
               href={category.href}
               key={category.title}
               className="group relative aspect-[4/5] overflow-hidden bg-light-beige"
+              style={{ position: "relative" }}
             >
 
               <Image
@@ -199,7 +200,7 @@ export default function Home() {
       </section>
 
       {/* 05. FEATURED COLLECTION */}
-      <section className="relative h-[480px] overflow-hidden bg-burgundy sm:h-[580px] lg:h-[620px]">
+      <section className="relative h-[480px] overflow-hidden bg-burgundy sm:h-[580px] lg:h-[620px]" style={{ position: "relative" }}>
 
         <Image
           src="/images/featured-collection.jpg"

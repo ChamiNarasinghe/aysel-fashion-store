@@ -1,24 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, X, ShoppingBag, ArrowRight } from "lucide-react";
-import { useCartStore } from "@/stores/cart-store";
+import { useGuestCartStore } from "@/stores/guest-cart-store";
+import { useStoreReadiness } from "@/providers/store-provider";
 import { products, formatPrice } from "@/data/products";
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, totalItems, totalPrice } =
-    useCartStore();
-  const [mounted, setMounted] = useState(false);
+    useGuestCartStore();
+  const { ready, migrationError } = useStoreReadiness();
 
-  useEffect(() => {
-    useCartStore.persist.rehydrate();
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
+  if (!ready) {
     return <div className="min-h-[60vh] bg-warm-white" aria-hidden="true" />;
+  }
+
+  if (migrationError) {
+    return (
+      <div className="flex min-h-[70vh] flex-col items-center justify-center bg-warm-white px-5 py-24 text-center">
+        <ShoppingBag size={48} strokeWidth={1} className="text-burgundy" />
+        <h1 className="mt-6 font-display text-3xl text-soft-black sm:text-4xl">
+          Your bag couldn&apos;t be loaded
+        </h1>
+        <p className="mx-auto mt-4 max-w-md text-sm text-muted-grey">
+          We ran into a problem loading your shopping bag. Your items are safe
+          and have not been deleted. Please refresh the page to try again, or
+          contact us if the problem persists.
+        </p>
+        <p className="mt-3 rounded border border-light-beige bg-light-beige/40 px-4 py-2 text-[10px] tracking-wider text-muted-grey">
+          {migrationError}
+        </p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-8 inline-flex items-center gap-3 bg-burgundy px-8 py-4 text-[10px] tracking-[0.2em] text-warm-white transition-opacity hover:opacity-90"
+        >
+          REFRESH PAGE
+        </button>
+      </div>
+    );
   }
 
   if (items.length === 0) {
@@ -68,16 +89,18 @@ export default function CartPage() {
                 const maxQty = product?.stockCount ?? 99;
                 const atMax = item.quantity >= maxQty;
                 const atMin = item.quantity <= 1;
+                const isLocked = item.mergeLock === "pending";
 
                 return (
                   <li
-                    key={`${item.productId}-${item.size}-${item.color}`}
+                    key={item.lineId}
                     className="flex gap-5 py-7 sm:gap-7"
                   >
                     {/* Image */}
                     <Link
                       href={`/products/${item.slug}`}
                       className="relative h-32 w-24 shrink-0 overflow-hidden bg-light-beige sm:h-40 sm:w-28"
+                      style={{ position: "relative" }}
                     >
                       <Image
                         src={item.image}
@@ -114,11 +137,10 @@ export default function CartPage() {
                         {/* Remove */}
                         <button
                           type="button"
-                          onClick={() =>
-                            removeItem(item.productId, item.size, item.color)
-                          }
+                          onClick={() => removeItem(item.lineId)}
+                          disabled={isLocked}
                           aria-label={`Remove ${item.name} from bag`}
-                          className="shrink-0 p-1 text-muted-grey transition-colors hover:text-soft-black"
+                          className="shrink-0 p-1 text-muted-grey transition-colors hover:text-soft-black disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <X size={16} strokeWidth={1.5} />
                         </button>
@@ -130,14 +152,9 @@ export default function CartPage() {
                           <button
                             type="button"
                             onClick={() =>
-                              updateQuantity(
-                                item.productId,
-                                item.size,
-                                item.color,
-                                item.quantity - 1
-                              )
+                              updateQuantity(item.lineId, item.quantity - 1)
                             }
-                            disabled={atMin}
+                            disabled={atMin || isLocked}
                             aria-label="Decrease quantity"
                             className="flex h-9 w-9 items-center justify-center transition-colors hover:bg-light-beige disabled:cursor-not-allowed disabled:text-light-beige"
                           >
@@ -149,14 +166,9 @@ export default function CartPage() {
                           <button
                             type="button"
                             onClick={() =>
-                              updateQuantity(
-                                item.productId,
-                                item.size,
-                                item.color,
-                                item.quantity + 1
-                              )
+                              updateQuantity(item.lineId, item.quantity + 1)
                             }
-                            disabled={atMax}
+                            disabled={atMax || isLocked}
                             aria-label="Increase quantity"
                             className="flex h-9 w-9 items-center justify-center transition-colors hover:bg-light-beige disabled:cursor-not-allowed disabled:text-light-beige"
                           >

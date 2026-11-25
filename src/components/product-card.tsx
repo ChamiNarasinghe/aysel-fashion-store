@@ -1,30 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import type { Product } from "@/data/products";
 import { formatPrice } from "@/data/products";
-import { useWishlistStore } from "@/stores/wishlist-store";
+import { useGuestWishlistStore } from "@/stores/guest-wishlist-store";
+import { useStoreReadiness } from "@/providers/store-provider";
 
 export default function ProductCard({ product }: { product: Product }) {
-  const { toggle, has } = useWishlistStore();
-  const [mounted, setMounted] = useState(false);
+  const { toggle, has } = useGuestWishlistStore();
+  const { ready } = useStoreReadiness();
 
-  // Prevent SSR/hydration mismatch — wishlist state is client-only
-  useEffect(() => {
-    useWishlistStore.persist.rehydrate();
-    setMounted(true);
-  }, []);
-
-  const wishlisted = mounted && has(product.id);
+  const wishlisted = ready && has(product.id);
 
   return (
     <article className="group min-w-0">
 
       {/* Image */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-light-beige">
+      <div className="relative aspect-[3/4] overflow-hidden bg-light-beige" style={{ position: "relative" }}>
 
         <Link href={`/products/${product.slug}`}>
           <Image

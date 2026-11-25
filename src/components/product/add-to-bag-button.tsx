@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ShoppingBag, Check } from "lucide-react";
-import { useCartStore } from "@/stores/cart-store";
+import { useGuestCartStore } from "@/stores/guest-cart-store";
 import type { Product, ProductColor } from "@/data/products";
 
 type Props = {
@@ -20,7 +20,7 @@ export default function AddToBagButton({
   quantity,
   onSizeError,
 }: Props) {
-  const addItem = useCartStore((s) => s.addItem);
+  const addItem = useGuestCartStore((s) => s.addItem);
   const [added, setAdded] = useState(false);
 
   const isOutOfStock = product.availability === "out-of-stock";

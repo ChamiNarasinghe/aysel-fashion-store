@@ -11,11 +11,14 @@ import {
   ShoppingBag,
   Menu,
   X,
+  LogOut,
 } from "lucide-react";
 import { products, formatPrice } from "@/data/products";
 import type { Product } from "@/data/products";
-import { useCartStore } from "@/stores/cart-store";
-import { useWishlistStore } from "@/stores/wishlist-store";
+import { useGuestCartStore } from "@/stores/guest-cart-store";
+import { useGuestWishlistStore } from "@/stores/guest-wishlist-store";
+import { useStoreReadiness } from "@/providers/store-provider";
+import { supabase } from "@/lib/supabase/client";
 
 const navigation = [
   { label: "WOMEN", href: "/collections/women" },
@@ -43,17 +46,37 @@ export default function SiteHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [badgesMounted, setBadgesMounted] = useState(false);
+  // null = not yet resolved, false = signed out, true = signed in
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const cartCount = useCartStore((s) => s.totalItems());
-  const wishlistCount = useWishlistStore((s) => s.ids.length);
+  const { ready } = useStoreReadiness();
+  const cartCount = useGuestCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
+  const wishlistCount = useGuestWishlistStore((s) => s.items.length);
 
   useEffect(() => {
-    useCartStore.persist.rehydrate();
-    useWishlistStore.persist.rehydrate();
-    setBadgesMounted(true);
+    // Resolve initial session without a network call.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    // Keep auth state in sync across tabs and after login/logout.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    await supabase.auth.signOut();
+    setSigningOut(false);
+    router.refresh();
+    router.push("/");
+  }
 
   const suggestions = getSuggestions(query);
 
@@ -173,13 +196,34 @@ export default function SiteHeader() {
               <Search size={20} strokeWidth={1.5} />
             </button>
 
-            <Link
-              href="/account"
-              aria-label="My account"
-              className="hidden transition-colors hover:text-burgundy sm:block"
-            >
-              <UserRound size={20} strokeWidth={1.5} />
-            </Link>
+            {/* Account icon — resolves after mount to avoid hydration mismatch */}
+            {isAuthenticated === true ? (
+              <>
+                <Link
+                  href="/account"
+                  aria-label="My account"
+                  className="hidden transition-colors hover:text-burgundy sm:block"
+                >
+                  <UserRound size={20} strokeWidth={1.5} />
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  disabled={signingOut}
+                  aria-label="Sign out"
+                  className="hidden transition-colors hover:text-burgundy disabled:opacity-50 sm:block"
+                >
+                  <LogOut size={20} strokeWidth={1.5} />
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                aria-label="Sign in"
+                className="hidden transition-colors hover:text-burgundy sm:block"
+              >
+                <UserRound size={20} strokeWidth={1.5} />
+              </Link>
+            )}
 
             <Link
               href="/wishlist"
@@ -187,7 +231,7 @@ export default function SiteHeader() {
               className="relative hidden transition-colors hover:text-burgundy sm:block"
             >
               <Heart size={20} strokeWidth={1.5} />
-              {badgesMounted && wishlistCount > 0 && (
+              {ready && wishlistCount > 0 && (
                 <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-burgundy text-[9px] font-medium text-warm-white">
                   {wishlistCount > 99 ? "99+" : wishlistCount}
                 </span>
@@ -200,7 +244,7 @@ export default function SiteHeader() {
               className="relative transition-colors hover:text-burgundy"
             >
               <ShoppingBag size={20} strokeWidth={1.5} />
-              {badgesMounted && cartCount > 0 && (
+              {ready && cartCount > 0 && (
                 <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-burgundy text-[9px] font-medium text-warm-white">
                   {cartCount > 99 ? "99+" : cartCount}
                 </span>
@@ -270,7 +314,7 @@ export default function SiteHeader() {
                               i === activeIndex ? "bg-light-beige" : "hover:bg-light-beige/50"
                             }`}
                           >
-                            <div className="relative h-14 w-10 shrink-0 overflow-hidden bg-light-beige">
+                            <div className="relative h-14 w-10 shrink-0 overflow-hidden bg-light-beige" style={{ position: "relative" }}>
                               <Image
                                 src={product.image}
                                 alt={product.name}
@@ -325,13 +369,32 @@ export default function SiteHeader() {
                 </Link>
               ))}
 
-              <Link
-                href="/account"
-                onClick={() => setMenuOpen(false)}
-                className="text-xs tracking-[0.16em]"
-              >
-                MY ACCOUNT
-              </Link>
+              {isAuthenticated === true ? (
+                <>
+                  <Link
+                    href="/account"
+                    onClick={() => setMenuOpen(false)}
+                    className="border-b border-light-beige pb-3 text-xs tracking-[0.16em]"
+                  >
+                    MY ACCOUNT
+                  </Link>
+                  <button
+                    onClick={() => { setMenuOpen(false); handleSignOut(); }}
+                    disabled={signingOut}
+                    className="text-left text-xs tracking-[0.16em] text-muted-grey disabled:opacity-50"
+                  >
+                    SIGN OUT
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setMenuOpen(false)}
+                  className="border-b border-light-beige pb-3 text-xs tracking-[0.16em]"
+                >
+                  SIGN IN
+                </Link>
+              )}
 
               <Link
                 href="/wishlist"

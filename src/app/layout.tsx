@@ -4,6 +4,7 @@ import { Playfair_Display, DM_Sans } from "next/font/google";
 import "./globals.css";
 import SiteHeader from "@/components/site-header";
 import SiteFooter from "@/components/site-footer";
+import StoreProvider from "@/providers/store-provider";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -32,11 +33,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body className={`${playfair.variable} ${dmSans.variable}`}>
-        <SiteHeader />
-        <main>{children}</main>
-        <SiteFooter />
+        <StoreProvider>
+          <SiteHeader />
+          <main>{children}</main>
+          <SiteFooter />
+        </StoreProvider>
       </body>
     </html>
   );

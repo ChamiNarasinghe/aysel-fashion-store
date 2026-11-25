@@ -17,7 +17,7 @@ export default function NewArrivalsPage() {
     <div className="bg-warm-white">
 
       {/* Editorial Banner */}
-      <section className="relative h-[420px] overflow-hidden bg-light-beige sm:h-[520px]">
+      <section className="relative h-[420px] overflow-hidden bg-light-beige sm:h-[520px]" style={{ position: "relative" }}>
         <Image
           src="/images/hero-campaign.jpg"
           alt="AYSEL New Arrivals"

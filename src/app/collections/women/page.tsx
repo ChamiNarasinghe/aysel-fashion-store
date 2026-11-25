@@ -17,7 +17,7 @@ export default function WomenCollectionPage() {
     <div className="bg-warm-white">
 
       {/* Editorial Banner */}
-      <section className="relative h-[420px] overflow-hidden bg-light-beige sm:h-[520px]">
+      <section className="relative h-[420px] overflow-hidden bg-light-beige sm:h-[520px]" style={{ position: "relative" }}>
         <Image
           src="/images/category-women.jpg"
           alt="AYSEL Women's Collection"

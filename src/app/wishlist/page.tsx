@@ -1,27 +1,48 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, X, ShoppingBag, ArrowRight } from "lucide-react";
-import { useWishlistStore } from "@/stores/wishlist-store";
+import { Heart, ShoppingBag, ArrowRight } from "lucide-react";
+import { useGuestWishlistStore } from "@/stores/guest-wishlist-store";
+import { useStoreReadiness } from "@/providers/store-provider";
 import { products, formatPrice } from "@/data/products";
 
 export default function WishlistPage() {
-  const { ids, toggle } = useWishlistStore();
-  const [mounted, setMounted] = useState(false);
-  const [addedIds, setAddedIds] = useState<number[]>([]);
+  const { items, toggle } = useGuestWishlistStore();
+  const { ready, migrationError } = useStoreReadiness();
 
-  useEffect(() => {
-    useWishlistStore.persist.rehydrate();
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
+  if (!ready) {
     return <div className="min-h-[60vh] bg-warm-white" aria-hidden="true" />;
   }
 
-  const wishlistProducts = products.filter((p) => ids.includes(p.id));
+  if (migrationError) {
+    return (
+      <div className="flex min-h-[70vh] flex-col items-center justify-center bg-warm-white px-5 py-24 text-center">
+        <Heart size={48} strokeWidth={1} className="text-burgundy" />
+        <h1 className="mt-6 font-display text-3xl text-soft-black sm:text-4xl">
+          Your wishlist couldn&apos;t be loaded
+        </h1>
+        <p className="mx-auto mt-4 max-w-md text-sm text-muted-grey">
+          We ran into a problem loading your wishlist. Your saved pieces are
+          safe and have not been deleted. Please refresh the page to try again,
+          or contact us if the problem persists.
+        </p>
+        <p className="mt-3 rounded border border-light-beige bg-light-beige/40 px-4 py-2 text-[10px] tracking-wider text-muted-grey">
+          {migrationError}
+        </p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-8 inline-flex items-center gap-3 bg-burgundy px-8 py-4 text-[10px] tracking-[0.2em] text-warm-white transition-opacity hover:opacity-90"
+        >
+          REFRESH PAGE
+        </button>
+      </div>
+    );
+  }
+
+  const wishlistProductIds = new Set(items.map((i) => i.productId));
+  const wishlistProducts = products.filter((p) => wishlistProductIds.has(p.id));
 
   // ── Empty state ────────────────────────────────────────────────────────────
   if (wishlistProducts.length === 0) {
@@ -64,12 +85,11 @@ export default function WishlistPage() {
         <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 md:grid-cols-3 lg:grid-cols-4">
           {wishlistProducts.map((product) => {
             const isOutOfStock = product.availability === "out-of-stock";
-            const isAdded = addedIds.includes(product.id);
 
             return (
               <article key={product.id} className="group min-w-0">
                 {/* Image */}
-                <div className="relative aspect-[3/4] overflow-hidden bg-light-beige">
+                <div className="relative aspect-[3/4] overflow-hidden bg-light-beige" style={{ position: "relative" }}>
                   <Link href={`/products/${product.slug}`}>
                     <Image
                       src={product.image}
@@ -135,22 +155,14 @@ export default function WishlistPage() {
                     className={`mt-1 flex h-10 w-full items-center justify-center gap-2 text-[10px] tracking-[0.15em] transition-all duration-300 ${
                       isOutOfStock
                         ? "cursor-not-allowed border border-light-beige text-muted-grey"
-                        : isAdded
-                        ? "bg-soft-black text-warm-white"
                         : "border border-soft-black text-soft-black hover:bg-soft-black hover:text-warm-white"
                     }`}
                     onClick={(e) => {
-                      // If not out of stock, prevent navigation and show feedback
-                      // We always navigate to PDP for size/colour selection
                       if (isOutOfStock) e.preventDefault();
                     }}
                   >
                     <ShoppingBag size={13} strokeWidth={1.5} />
-                    {isOutOfStock
-                      ? "OUT OF STOCK"
-                      : isAdded
-                      ? "ADDED"
-                      : "SELECT OPTIONS"}
+                    {isOutOfStock ? "OUT OF STOCK" : "SELECT OPTIONS"}
                   </Link>
                 </div>
               </article>

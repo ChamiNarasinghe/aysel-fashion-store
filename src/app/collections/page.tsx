@@ -38,6 +38,7 @@ export default function CollectionsPage() {
           <Link
             href="/collections/women"
             className="group relative aspect-[4/5] overflow-hidden bg-light-beige"
+            style={{ position: "relative" }}
           >
             <Image
               src="/images/category-women.jpg"
@@ -59,6 +60,7 @@ export default function CollectionsPage() {
           <Link
             href="/collections/men"
             className="group relative aspect-[4/5] overflow-hidden bg-light-beige"
+            style={{ position: "relative" }}
           >
             <Image
               src="/images/category-men.jpg"
@@ -104,7 +106,7 @@ export default function CollectionsPage() {
       </section>
 
       {/* Featured Collection Banner */}
-      <section className="relative h-[480px] overflow-hidden bg-burgundy sm:h-[560px]">
+      <section className="relative h-[480px] overflow-hidden bg-burgundy sm:h-[560px]" style={{ position: "relative" }}>
         <Image
           src="/images/featured-collection.jpg"
           alt="AYSEL featured collection"

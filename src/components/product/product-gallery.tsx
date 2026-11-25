@@ -30,6 +30,7 @@ export default function ProductGallery({ images, productName }: Props) {
                   ? "ring-2 ring-soft-black ring-offset-2 opacity-100"
                   : "opacity-55 hover:opacity-80 ring-1 ring-transparent"
               }`}
+              style={{ position: "relative" }}
             >
               <Image
                 src={src}
@@ -44,7 +45,7 @@ export default function ProductGallery({ images, productName }: Props) {
       )}
 
       {/* Main image */}
-      <div className={`order-1 relative overflow-hidden bg-light-beige lg:order-2 lg:flex-1 ${showThumbs ? "aspect-[3/4]" : "aspect-[3/4]"}`}>
+      <div className={`order-1 relative overflow-hidden bg-light-beige lg:order-2 lg:flex-1 ${showThumbs ? "aspect-[3/4]" : "aspect-[3/4]"}`} style={{ position: "relative" }}>
         <Image
           key={images[activeIndex]}
           src={images[activeIndex]}

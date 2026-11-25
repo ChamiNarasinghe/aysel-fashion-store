@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Heart } from "lucide-react";
 import type { Product, ProductColor } from "@/data/products";
 import { formatPrice } from "@/data/products";
-import { useWishlistStore } from "@/stores/wishlist-store";
-import { useCartStore } from "@/stores/cart-store";
+import { useGuestWishlistStore } from "@/stores/guest-wishlist-store";
+import { useStoreReadiness } from "@/providers/store-provider";
 import ProductGallery from "@/components/product/product-gallery";
 import ColorSelector from "@/components/product/color-selector";
 import SizeSelector from "@/components/product/size-selector";
@@ -26,17 +26,11 @@ export default function ProductDetailClient({ product }: Props) {
   const [quantity, setQuantity] = useState(1);
   const [sizeError, setSizeError] = useState(false);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
-  const { toggle, has } = useWishlistStore();
+  const { ready } = useStoreReadiness();
+  const { toggle, has } = useGuestWishlistStore();
 
-  useEffect(() => {
-    useWishlistStore.persist.rehydrate();
-    useCartStore.persist.rehydrate();
-    setMounted(true);
-  }, []);
-
-  const wishlisted = mounted && has(product.id);
+  const wishlisted = ready && has(product.id);
 
   // When colour has an associated image, promote it to the front of the gallery
   const galleryImages = selectedColor.image
